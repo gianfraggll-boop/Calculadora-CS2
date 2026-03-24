@@ -68,17 +68,14 @@
     .page { display: none; }
     .page.active { display: block; }
 
-    /* Desktop: watchlist columnas en grid */
-    @media (min-width: 640px) {
-      .wl-col-wrap {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        align-items: stretch;
-      }
+    /* Watchlist columnas siempre lado a lado */
+    .wl-col-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      align-items: stretch;
     }
     @media (max-width: 639px) {
-      .wl-col-wrap { display: flex; flex-direction: column; }
       .t-metrics { grid-template-columns: 1fr 1fr !important; }
       table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
