@@ -18,21 +18,104 @@
       background: #0a0a0a;
       color: #e8e8e4;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
     }
 
     body {
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 16px;
-      overflow-y: auto;
+      padding: 0;
     }
 
     .app {
       width: 100%;
-      max-width: 360px;
+      max-width: 900px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 16px 0;
     }
 
+    .nav-wrapper {
+      flex-shrink: 0;
+      padding-bottom: 0;
+    }
+
+    .page-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 16px;
+      min-height: 0;
+    }
+
+    /* Watchlist ocupa toda la altura disponible sin scroll externo */
+    #page-watchlist {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #wl-col-csf::-webkit-scrollbar, #wl-col-st::-webkit-scrollbar { width: 3px; }
+    #wl-col-csf::-webkit-scrollbar-thumb, #wl-col-st::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    #wl-col-csf::-webkit-scrollbar-track, #wl-col-st::-webkit-scrollbar-track { background: transparent; }
+    .page-scroll::-webkit-scrollbar { width: 4px; }
+    .page-scroll::-webkit-scrollbar-track { background: transparent; }
+    .page-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .page-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* Desktop: watchlist columnas en grid */
+    @media (min-width: 640px) {
+      .wl-col-wrap {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        align-items: stretch;
+      }
+    }
+    @media (max-width: 639px) {
+      .wl-col-wrap { display: flex; flex-direction: column; }
+      .t-metrics { grid-template-columns: 1fr 1fr !important; }
+      table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    }
+    .tracker-full { width: 100%; }
+
+    /* ── NAV TABS ── */
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 14px;
+      background: #141414;
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 4px;
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 7px 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: #555450;
+      background: none;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      text-align: center;
+    }
+    .nav-tab.active {
+      background: #1e1e1e;
+      color: #e8e8e4;
+    }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── SHARED ── */
     h1 {
       font-size: 15px;
       font-weight: 500;
@@ -42,7 +125,6 @@
       align-items: center;
       gap: 8px;
     }
-
     h1 .dot { width: 8px; height: 8px; border-radius: 50%; background: #5dcaa5; }
 
     .card {
@@ -50,6 +132,9 @@
       border: 0.5px solid rgba(255,255,255,0.1);
       border-radius: 12px;
       padding: 14px;
+      margin-bottom: 10px;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .section-label {
@@ -67,7 +152,7 @@
     .il { font-size: 11px; color: #888780; }
     .ih { font-size: 10px; color: #444441; margin-top: 1px; line-height: 1.3; }
 
-    input[type=number] {
+    input[type=number], input[type=text], input[type=date] {
       width: 100%;
       height: 32px;
       padding: 0 8px;
@@ -82,8 +167,11 @@
     }
     input[type=number]::-webkit-inner-spin-button,
     input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type=number]:focus { border-color: rgba(255,255,255,0.35); }
-    input[type=number]::placeholder { color: #444441; }
+    input[type=number]:focus,
+    input[type=text]:focus,
+    input[type=date]:focus { border-color: rgba(255,255,255,0.35); }
+    input::placeholder { color: #444441; }
+    input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.4); }
 
     .divider { border: none; border-top: 0.5px solid rgba(255,255,255,0.07); margin: 12px 0; }
 
@@ -149,99 +237,728 @@
       margin-top: -2px;
     }
     .clear-btn:hover { border-color: rgba(255,255,255,0.25); color: #888780; }
+
+    /* ── TRACKER ── */
+    .t-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .t-metric {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .t-ml { font-size: 10px; color: #888780; margin-bottom: 3px; line-height: 1.2; }
+    .t-mv { font-size: 16px; font-weight: 500; color: #e8e8e4; }
+    .t-ms { font-size: 10px; color: #555450; margin-top: 2px; }
+    .t-mv.good { color: #5dcaa5; }
+    .t-mv.bad  { color: #f09595; }
+    .t-mv.warn { color: #fac775; }
+
+    .t-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .t-field { display: flex; flex-direction: column; gap: 3px; }
+    .t-label { font-size: 11px; color: #888780; }
+
+    .t-btn {
+      width: 100%;
+      height: 34px;
+      background: #1d9e75;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.15s;
+    }
+    .t-btn:hover { opacity: 0.85; }
+
+    .t-snap-list { display: flex; flex-direction: column; gap: 6px; }
+    .t-snap {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 0.5px solid rgba(255,255,255,0.07);
+    }
+    .t-snap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .t-snap-date { font-size: 11px; color: #888780; }
+    .t-snap-total { font-size: 14px; font-weight: 500; color: #e8e8e4; }
+    .t-snap-body {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+    .t-snap-body span { color: #555450; }
+    .t-snap-body strong { color: #e8e8e4; font-weight: 500; }
+    .t-delta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 0.5px solid rgba(255,255,255,0.06);
+      font-size: 11px;
+    }
+    .t-snap-notes { font-size: 10px; color: #444441; margin-top: 4px; font-style: italic; }
+
+    .t-del {
+      background: none;
+      border: none;
+      color: #444441;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .t-del:hover { color: #f09595; }
+
+    .t-progress-wrap { margin-top: 8px; }
+    .t-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #555450;
+      margin-bottom: 4px;
+    }
+    .t-progress-bar {
+      height: 5px;
+      background: #1e1e1e;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .t-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s;
+    }
+
+    .t-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .t-badge.ok   { background: #04342c; color: #9fe1cb; }
+    .t-badge.warn { background: #412402; color: #fac775; }
+    .t-badge.bad  { background: #501313; color: #f7c1c1; }
+
+    .t-empty {
+      text-align: center;
+      padding: 20px 0;
+      font-size: 12px;
+      color: #444441;
+    }
+
+    .t-legend {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .t-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      color: #555450;
+    }
+    .t-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── WATCHLIST ── */
+    .wl-item {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 0.5px solid rgba(255,255,255,0.07);
+      margin-bottom: 8px;
+    }
+    .wl-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:8px; }
+    .wl-name { font-size:12px; font-weight:500; color:#e8e8e4; flex:1; line-height:1.3; }
+    .wl-source { font-size:10px; padding:2px 6px; border-radius:4px; white-space:nowrap; flex-shrink:0; }
+    .wl-source.csf { background:#0f3d2e; color:#5dcaa5; }
+    .wl-source.st  { background:#1a2c4a; color:#7ab8f5; }
+    .wl-prices { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:6px; }
+    .wl-price-box { background:#141414; border-radius:6px; padding:6px 8px; }
+    .wl-price-label { font-size:10px; color:#555450; margin-bottom:2px; }
+    .wl-price-val { font-size:13px; font-weight:500; color:#e8e8e4; }
+    .wl-result { display:flex; justify-content:space-between; align-items:center; padding-top:6px; border-top:0.5px solid rgba(255,255,255,0.06); font-size:11px; }
+    .wl-badges { display:flex; gap:5px; flex-wrap:wrap; }
+    .wl-link { font-size:10px; color:#444441; text-decoration:none; }
+    .wl-link:hover { color:#888780; }
+    .wl-input-wrap { position:relative; }
+    .wl-input-wrap input { padding-right: 60px; }
+    .wl-parse-hint { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:10px; color:#444441; pointer-events:none; }
+    .wl-parsed-name { font-size:11px; color:#5dcaa5; margin-top:3px; min-height:14px; }
+    .wl-empty { text-align:center; padding:20px 0; font-size:12px; color:#444441; }
+    .wl-sort-bar { display:flex; gap:6px; margin-bottom:10px; }
+    .wl-sort-btn { font-size:11px; padding:4px 10px; background:none; border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; color:#555450; cursor:pointer; }
+    .wl-sort-btn.active { border-color:#5dcaa5; color:#5dcaa5; }
   </style>
 </head>
 <body>
 <div class="app">
-  <h1><span class="dot"></span>Arbitraje CS2 <button class="clear-btn" onclick="clearAll()">limpiar</button></h1>
-  <div class="card">
 
-    <div class="section-label">Paso 1 — CSFloat → Steam</div>
-    <div class="row2">
-      <div class="ig">
-        <span class="il">Compra CSFloat (USD)</span>
-        <input type="number" id="cf-buy" placeholder="$" min="0.01" step="0.01" oninput="calc()">
+  <!-- NAV -->
+  <div class="nav-wrapper">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+      <div class="nav-tabs" style="flex:1;margin-bottom:0;">
+        <button class="nav-tab active" onclick="switchPage('calc')">Calculadora</button>
+        <button class="nav-tab" onclick="switchPage('watchlist')">Watchlist</button>
+        <button class="nav-tab" onclick="switchPage('tracker')">Tracker</button>
       </div>
-      <div class="ig">
-        <span class="il">Venta Steam (PEN)</span>
-        <input type="number" id="st-sell" placeholder="S/" min="0.01" step="0.01" oninput="calc()">
-        <span class="ih">÷5 debe ser ≥10% sobre compra</span>
-      </div>
+      <button id="layout-btn" onclick="toggleLayout()" style="background:#141414;border:0.5px solid rgba(255,255,255,0.1);border-radius:8px;color:#555450;padding:7px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;"></button>
     </div>
-    <div id="badge-p1" style="display:none;"></div>
-
-    <div class="divider"></div>
-
-    <div class="section-label">Paso 2 — Steam → CSFloat</div>
-    <div class="row2">
-      <div class="ig">
-        <span class="il">Compra Steam (PEN)</span>
-        <input type="number" id="st-buy" placeholder="S/" min="0.01" step="0.01" oninput="calc()">
-        <span class="ih">÷5 debe ser ≥20% bajo venta neta</span>
-      </div>
-      <div class="ig">
-        <span class="il">Venta CSFloat (USD)</span>
-        <input type="number" id="cf-sell" placeholder="$" min="0.01" step="0.01" oninput="calc()">
-        <span class="ih">Comisión: máx(ceil(2%), $0.01)</span>
-      </div>
-    </div>
-    <div id="badge-p2" style="display:none;"></div>
-
-    <div class="divider"></div>
-
-    <div class="steps" id="steps" style="display:none;">
-      <div class="section-label">Desglose</div>
-      <div class="step"><span class="sl">Steam ÷5 (USD ref.)</span><span class="sv" id="s-div5">—</span></div>
-      <div class="step"><span class="sl">Margen paso 1</span><span class="sv" id="s-margin1">—</span></div>
-      <div class="step"><span class="sl">Steam neto (×0.87)</span><span class="sv" id="s-neto-pen">—</span></div>
-      <div class="step"><span class="sl">Compra Steam ÷5</span><span class="sv" id="s-buy-usd">—</span></div>
-      <div class="step"><span class="sl">Margen paso 2</span><span class="sv" id="s-margin2">—</span></div>
-      <div class="step"><span class="sl">Comisión CSFloat</span><span class="sv" id="s-fee">—</span></div>
-      <div class="step"><span class="sl">Venta CSFloat neta</span><span class="sv" id="s-cf-neta">—</span></div>
-      <div class="step"><span class="sl">Ratio</span><span class="sv" id="s-ratio">—</span></div>
-      <div class="step"><span class="sl">Resultado</span><span class="sv" id="s-result">—</span></div>
-      <div class="step"><span class="sl">Saldo Steam sobrante</span><span class="sv" id="s-saldo">—</span></div>
-    </div>
-
-    <div class="metrics" id="metrics" style="display:none;">
-      <div class="metric"><div class="ml">Capital inicial</div><div class="mv" id="m-inicial">—</div></div>
-      <div class="metric"><div class="ml">Capital final</div><div class="mv" id="m-final">—</div></div>
-      <div class="metric"><div class="ml">Ganancia</div><div class="mv" id="m-profit">—</div></div>
-      <div class="metric"><div class="ml">Margen</div><div class="mv" id="m-margin">—</div></div>
-      <div class="metric"><div class="ml">Mín. CF 0%</div><div class="mv" id="m-min0">—</div></div>
-      <div class="metric"><div class="ml">Mín. CF 10%</div><div class="mv" id="m-min10">—</div></div>
-    </div>
-
-    <div class="verdict" id="verdict" style="display:none;">
-      <div class="vt" id="vt"></div>
-      <div class="vs" id="vs"></div>
-    </div>
-
-    <div id="minimos-steam" style="display:none;">
-      <div class="section-label">Mínimos Steam (Paso 1)</div>
-      <div class="min-grid">
-        <div class="min-card">
-          <div class="min-title">Para 0% en ciclo</div>
-          <div class="min-row"><span>PEN</span><span id="st-min0-pen">—</span></div>
-          <div class="min-row"><span>÷5 USD</span><span id="st-min0-usd">—</span></div>
-        </div>
-        <div class="min-card">
-          <div class="min-title">Para 10% en ciclo</div>
-          <div class="min-row"><span>PEN</span><span id="st-min10-pen">—</span></div>
-          <div class="min-row"><span>÷5 USD</span><span id="st-min10-usd">—</span></div>
-        </div>
-      </div>
-    </div>
-
   </div>
-  <div class="footer">CSFloat ↔ Steam · offline</div>
+
+  <!-- PÁGINAS (scrollable) -->
+  <div class="page-scroll">
+
+  <!-- ══════════════════════════════════════
+       PÁGINA 1 — CALCULADORA
+  ══════════════════════════════════════ -->
+  <div class="page active" id="page-calc">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span class="section-label" style="margin:0;">Arbitraje CS2</span>
+        <button class="clear-btn" onclick="clearAll()">limpiar</button>
+      </div>
+
+      <div class="section-label">Paso 1 — CSFloat → Steam</div>
+      <div class="row2">
+        <div class="ig">
+          <span class="il">Compra CSFloat (USD)</span>
+          <input type="number" id="cf-buy" placeholder="$" min="0.01" step="0.01" oninput="calc()">
+        </div>
+        <div class="ig">
+          <span class="il">Venta Steam (PEN)</span>
+          <input type="number" id="st-sell" placeholder="S/" min="0.01" step="0.01" oninput="calc()">
+          <span class="ih">÷5 debe ser ≥10% sobre compra</span>
+        </div>
+      </div>
+      <div id="badge-p1" style="display:none;"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-label">Paso 2 — Steam → CSFloat</div>
+      <div class="row2">
+        <div class="ig">
+          <span class="il">Compra Steam (PEN)</span>
+          <input type="number" id="st-buy" placeholder="S/" min="0.01" step="0.01" oninput="calc()">
+          <span class="ih">÷5 debe ser ≥20% bajo venta neta</span>
+        </div>
+        <div class="ig">
+          <span class="il">Venta CSFloat (USD)</span>
+          <input type="number" id="cf-sell" placeholder="$" min="0.01" step="0.01" oninput="calc()">
+          <span class="ih">Comisión: máx(ceil(2%), $0.01)</span>
+        </div>
+      </div>
+      <div id="badge-p2" style="display:none;"></div>
+
+      <div class="divider"></div>
+
+      <div class="steps" id="steps" style="display:none;">
+        <div class="section-label">Desglose</div>
+        <div class="step"><span class="sl">Steam ÷5 (USD ref.)</span><span class="sv" id="s-div5">—</span></div>
+        <div class="step"><span class="sl">Margen paso 1</span><span class="sv" id="s-margin1">—</span></div>
+        <div class="step"><span class="sl">Steam neto (×0.87)</span><span class="sv" id="s-neto-pen">—</span></div>
+        <div class="step"><span class="sl">Compra Steam ÷5</span><span class="sv" id="s-buy-usd">—</span></div>
+        <div class="step"><span class="sl">Margen paso 2</span><span class="sv" id="s-margin2">—</span></div>
+        <div class="step"><span class="sl">Comisión CSFloat</span><span class="sv" id="s-fee">—</span></div>
+        <div class="step"><span class="sl">Venta CSFloat neta</span><span class="sv" id="s-cf-neta">—</span></div>
+        <div class="step"><span class="sl">Ratio</span><span class="sv" id="s-ratio">—</span></div>
+        <div class="step"><span class="sl">Resultado</span><span class="sv" id="s-result">—</span></div>
+        <div class="step"><span class="sl">Saldo Steam sobrante</span><span class="sv" id="s-saldo">—</span></div>
+      </div>
+
+      <div class="metrics" id="metrics" style="display:none;">
+        <div class="metric"><div class="ml">Capital inicial</div><div class="mv" id="m-inicial">—</div></div>
+        <div class="metric"><div class="ml">Capital final</div><div class="mv" id="m-final">—</div></div>
+        <div class="metric"><div class="ml">Ganancia</div><div class="mv" id="m-profit">—</div></div>
+        <div class="metric"><div class="ml">Margen</div><div class="mv" id="m-margin">—</div></div>
+        <div class="metric"><div class="ml">Mín. CF 0%</div><div class="mv" id="m-min0">—</div></div>
+        <div class="metric"><div class="ml">Mín. CF 10%</div><div class="mv" id="m-min10">—</div></div>
+      </div>
+
+      <div class="verdict" id="verdict" style="display:none;">
+        <div class="vt" id="vt"></div>
+        <div class="vs" id="vs"></div>
+      </div>
+
+      <div id="minimos-steam" style="display:none;">
+        <div class="section-label">Mínimos Steam (Paso 1)</div>
+        <div class="min-grid">
+          <div class="min-card">
+            <div class="min-title">Para 0% en ciclo</div>
+            <div class="min-row"><span>PEN</span><span id="st-min0-pen">—</span></div>
+            <div class="min-row"><span>÷5 USD</span><span id="st-min0-usd">—</span></div>
+          </div>
+          <div class="min-card">
+            <div class="min-title">Para 10% en ciclo</div>
+            <div class="min-row"><span>PEN</span><span id="st-min10-pen">—</span></div>
+            <div class="min-row"><span>÷5 USD</span><span id="st-min10-usd">—</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="footer">CSFloat ↔ Steam · offline</div>
+
+    <!-- Historial de cálculos -->
+    <div class="card" id="calc-hist-card" style="margin-top:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="section-label" style="margin:0;">Historial</span>
+        <button class="clear-btn" onclick="if(confirm('¿Borrar historial?')){calcHist=[];calcHistSave();calcHistRender()}">limpiar</button>
+      </div>
+      <div id="calc-hist-list">
+        <div style="font-size:12px;color:#444441;text-align:center;padding:8px 0;">Los cálculos completos aparecerán aquí.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PÁGINA 2 — WATCHLIST
+  ══════════════════════════════════════ -->
+  <div class="page" id="page-watchlist" style="display:none;flex-direction:column;height:100%;">
+    <!-- Formulario añadir -->
+    <div class="card" style="flex-shrink:0;">
+      <div class="section-label">Añadir oportunidad</div>
+
+      <!-- Selector plataforma -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button class="wl-sort-btn active" id="wl-plat-csf" onclick="wlSetPlat('csf')">Compra CSFloat</button>
+        <button class="wl-sort-btn" id="wl-plat-st" onclick="wlSetPlat('st')">Compra Steam</button>
+      </div>
+
+      <div class="ig" style="margin-bottom:8px;">
+        <span class="il">Link Steam Market</span>
+        <input type="text" id="wl-link" placeholder="https://steamcommunity.com/market/listings/..." onpaste="setTimeout(wlParseLink,50)" oninput="wlParseLink()" style="width:100%;height:32px;padding:0 8px;border:0.5px solid rgba(255,255,255,0.15);border-radius:7px;font-size:12px;color:#e8e8e4;background:#1e1e1e;outline:none;">
+        <div class="wl-parsed-name" id="wl-parsed-name"></div>
+      </div>
+
+      <div class="row2" style="margin-bottom:8px;">
+        <div class="ig">
+          <span class="il" id="wl-label-buy">Compra CSFloat ($)</span>
+          <input type="number" id="wl-buy" placeholder="0.00" step="0.01" oninput="wlCalcPreview()">
+        </div>
+        <div class="ig">
+          <span class="il" id="wl-label-sell">Venta Steam (PEN)</span>
+          <input type="number" id="wl-sell" placeholder="0.00" step="0.01" oninput="wlCalcPreview()">
+        </div>
+      </div>
+      <div id="wl-preview" style="display:none;margin-bottom:8px;font-size:11px;color:#555450;line-height:1.6;background:#141414;border-radius:7px;padding:8px 10px;"></div>
+      <button class="t-btn" onclick="wlAdd()">Guardar en watchlist</button>
+    </div>
+
+    <!-- Listas en 2 columnas que llenan el espacio restante -->
+    <div class="wl-col-wrap" style="gap:8px;align-items:stretch;flex:1;min-height:0;">
+
+      <!-- Columna CSFloat -->
+      <div class="card" style="padding:10px;display:flex;flex-direction:column;min-height:0;margin-bottom:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
+          <span class="section-label" style="margin:0;color:#5dcaa5;">CSFloat</span>
+          <div style="display:flex;gap:4px;">
+            <button class="wl-sort-btn" id="wl-csf-roi"    onclick="wlSetColSort('csf','roi')"    style="padding:2px 6px;font-size:10px;">ROI</button>
+            <button class="wl-sort-btn active" id="wl-csf-profit" onclick="wlSetColSort('csf','profit')" style="padding:2px 6px;font-size:10px;">$</button>
+          </div>
+        </div>
+        <div id="wl-col-csf" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;"></div>
+      </div>
+
+      <!-- Columna Steam -->
+      <div class="card" style="padding:10px;display:flex;flex-direction:column;min-height:0;margin-bottom:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;">
+          <span class="section-label" style="margin:0;color:#7ab8f5;">Steam</span>
+          <div style="display:flex;gap:4px;">
+            <button class="wl-sort-btn" id="wl-st-roi"    onclick="wlSetColSort('st','roi')"    style="padding:2px 6px;font-size:10px;">ROI</button>
+            <button class="wl-sort-btn active" id="wl-st-profit" onclick="wlSetColSort('st','profit')" style="padding:2px 6px;font-size:10px;">$</button>
+          </div>
+        </div>
+        <div id="wl-col-st" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PÁGINA 3 — TRACKER DE CAPITAL
+  ══════════════════════════════════════ -->
+  <div class="page" id="page-tracker">
+    <!-- Contador días desde último snapshot -->
+    <div id="t-snap-reminder" style="display:none;margin-bottom:10px;"></div>
+
+    <!-- Métricas resumen — full width -->
+    <div class="t-metrics tracker-full" id="t-metrics" style="margin-bottom:10px;">
+      <div class="t-metric"><div class="t-ml">Capital total</div><div class="t-mv">—</div></div>
+      <div class="t-metric"><div class="t-ml">Capital propio</div><div class="t-mv">—</div></div>
+      <div class="t-metric"><div class="t-ml">Ganancia neta</div><div class="t-mv">—</div></div>
+      <div class="t-metric"><div class="t-ml">Meta 15%/mes</div><div class="t-mv">—</div></div>
+    </div>
+
+    <!-- Gráfico — full width -->
+    <div class="card tracker-full" id="t-chart-card" style="display:none;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="section-label" style="margin:0;">Evolución del capital</span>
+        <div style="display:flex;gap:10px;">
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555450;"><span style="width:8px;height:8px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>Capital total</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555450;"><span style="display:inline-flex;gap:2px;align-items:center;"><span style="width:5px;height:2px;background:#E24B4A;"></span><span style="width:5px;height:2px;background:#E24B4A;"></span></span>Meta +15%</span>
+        </div>
+      </div>
+      <div id="t-chart"></div>
+      <div id="t-chart-labels"></div>
+    </div>
+
+    <!-- Nuevo snapshot + historial en full width -->
+    <div class="tracker-full">
+        <!-- Barra de progreso meta -->
+        <div class="card" id="t-meta-card" style="display:none;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="section-label" style="margin:0;">Progreso meta (15%)</span>
+            <span id="t-meta-badge" class="t-badge ok"></span>
+          </div>
+          <div id="t-meta-text" style="font-size:11px;color:#555450;margin-bottom:8px;line-height:1.5;"></div>
+          <div class="t-progress-wrap">
+            <div class="t-progress-label">
+              <span>0%</span>
+              <span id="t-meta-pct">0%</span>
+              <span>15%</span>
+            </div>
+            <div class="t-progress-bar">
+              <div class="t-progress-fill" id="t-progress-fill" style="width:0%;background:#1d9e75;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nuevo snapshot -->
+        <div class="card" style="margin-bottom:10px;">
+          <div class="section-label">Nuevo snapshot</div>
+          <div class="t-form-row">
+            <div class="t-field">
+              <span class="t-label">Fecha</span>
+              <input type="date" id="t-date">
+            </div>
+            <div class="t-field">
+              <span class="t-label">Inventario ($)</span>
+              <input type="number" id="t-inv" placeholder="0.00" step="0.01">
+            </div>
+          </div>
+          <div class="t-form-row">
+            <div class="t-field">
+              <span class="t-label">Capital libre ($)</span>
+              <input type="number" id="t-free" placeholder="0.00" step="0.01">
+            </div>
+            <div class="t-field">
+              <span class="t-label">Notas</span>
+              <input type="text" id="t-notes" placeholder="opcional">
+            </div>
+          </div>
+          <!-- Mini calculadora acumulativa -->
+          <div style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span class="section-label" style="margin:0;">Calcular inventario</span>
+              <button class="clear-btn" onclick="snapCalcReset()" style="font-size:11px;">limpiar</button>
+            </div>
+            <div style="background:#1e1e1e;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
+              <div style="font-size:11px;color:#555450;margin-bottom:2px;">Acumulado</div>
+              <div style="font-size:28px;font-weight:500;color:#5dcaa5;" id="snap-acc-total">$0.00</div>
+              <div id="snap-acc-log" style="font-size:10px;color:#444441;margin-top:4px;line-height:1.6;"></div>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="snap-acc-qty" placeholder="×1" step="1" min="1" value="1"
+                style="width:60px;height:36px;padding:0 8px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;font-size:15px;color:#e8e8e4;background:#1e1e1e;outline:none;text-align:center;">
+              <input type="number" id="snap-acc-input" placeholder="$0.00" step="0.01" min="0"
+                onkeydown="if(event.key==='Enter')snapCalcAdd()"
+                style="flex:1;height:36px;padding:0 10px;border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;font-size:15px;color:#e8e8e4;background:#1e1e1e;outline:none;text-align:right;">
+              <button onclick="snapCalcAdd()" style="width:44px;height:36px;background:#1d9e75;border:none;border-radius:8px;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;">✓</button>
+            </div>
+            <button onclick="snapCalcCopy()" id="snap-calc-copy-btn"
+              style="width:100%;margin-top:8px;height:32px;background:none;border:0.5px solid rgba(255,255,255,0.12);border-radius:7px;color:#888780;font-size:12px;cursor:pointer;">
+              usar total como inventario →
+            </button>
+          </div>
+          <button class="t-btn" onclick="tAddSnap()">Guardar snapshot</button>
+        </div>
+
+        <!-- Historial de snapshots -->
+        <div class="card" style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span class="section-label" style="margin:0;">Historial</span>
+            <button class="clear-btn" onclick="if(confirm('¿Borrar todo?')){tSnaps=[];tSave();tRender()}">limpiar</button>
+          </div>
+          <div class="t-snap-list" id="t-snap-list">
+            <div class="t-empty">Sin snapshots. Añade el primero cada ~15 días.</div>
+          </div>
+        </div>
+    </div>
+
+    <!-- Préstamos — full width al final -->
+    <div class="card tracker-full" style="margin-top:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span class="section-label" style="margin:0;">Préstamos</span>
+        <button class="clear-btn" onclick="lnToggleForm()">+ añadir</button>
+      </div>
+      <div id="ln-list"></div>
+      <div id="ln-form" style="display:none;margin-top:10px;border-top:0.5px solid rgba(255,255,255,0.07);padding-top:10px;">
+        <div class="section-label" style="margin-bottom:8px;">Nuevo préstamo</div>
+        <div class="t-form-row">
+          <div class="t-field">
+            <span class="t-label">Nombre / acreedor</span>
+            <input type="text" id="ln-name" placeholder="ej. Jenny" style="width:100%;height:32px;padding:0 8px;border:0.5px solid rgba(255,255,255,0.15);border-radius:7px;font-size:13px;color:#e8e8e4;background:#1e1e1e;outline:none;">
+          </div>
+          <div class="t-field">
+            <span class="t-label">Monto ($)</span>
+            <input type="number" id="ln-amount" placeholder="0.00" step="0.01">
+          </div>
+        </div>
+        <div class="t-form-row">
+          <div class="t-field">
+            <span class="t-label">Tasa mensual (%)</span>
+            <input type="number" id="ln-rate" placeholder="0.43" step="0.01" min="0.01" value="0.43">
+          </div>
+          <div class="t-field">
+            <span class="t-label">Plazo (meses)</span>
+            <input type="number" id="ln-months" placeholder="24" step="1" value="24">
+          </div>
+        </div>
+        <div class="t-form-row">
+          <div class="t-field">
+            <span class="t-label">Fecha inicio</span>
+            <input type="date" id="ln-start">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button class="t-btn" style="flex:1;" onclick="lnAdd()">Guardar préstamo</button>
+          <button class="clear-btn" onclick="lnToggleForm()" style="padding:0 14px;">Cancelar</button>
+        </div>
+      </div>
+      <div id="ln-summary" style="display:none;margin-top:10px;border-top:0.5px solid rgba(255,255,255,0.07);padding-top:8px;font-size:11px;color:#555450;line-height:1.7;"></div>
+    </div>
+
+    <div class="footer" style="margin-top:10px;">Capital tracker · offline</div>
+  </div>
+
+  </div><!-- /page-scroll -->
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
   }
 
+  /* ── LAYOUT ── */
+  let layoutWide = localStorage.getItem('cs2_layout') === 'wide';
+
+  function applyLayout() {
+    const app = document.querySelector('.app');
+    const btn = document.getElementById('layout-btn');
+    if (layoutWide) {
+      app.style.maxWidth = '900px';
+      app.style.padding = '20px 20px 0';
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>`;
+      btn.title = 'Modo angosto';
+    } else {
+      app.style.maxWidth = '360px';
+      app.style.padding = '16px 16px 0';
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+      btn.title = 'Modo escritorio';
+    }
+  }
+
+  function toggleLayout() {
+    layoutWide = !layoutWide;
+    localStorage.setItem('cs2_layout', layoutWide ? 'wide' : 'narrow');
+    applyLayout();
+  }
+
+  /* ── NAV ── */
+  function switchPage(p) {
+    document.querySelectorAll('.page').forEach(el => {
+      el.style.display = 'none';
+      el.classList.remove('active');
+    });
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    const page = document.getElementById('page-' + p);
+    page.classList.add('active');
+    page.style.display = p === 'watchlist' ? 'flex' : 'block';
+    const pages = ['calc','watchlist','tracker'];
+    document.querySelectorAll('.nav-tab')[pages.indexOf(p)].classList.add('active');
+  }
+
+  /* ══════════════════════════════════════
+     WATCHLIST
+  ══════════════════════════════════════ */
+  let wlItems       = JSON.parse(localStorage.getItem('cs2_wl') || '[]');
+  let wlCurrentPlat = 'csf';
+  let wlCurrentName = null;
+  let wlColSort     = { csf: 'profit', st: 'profit' };
+
+  function wlSave() { localStorage.setItem('cs2_wl', JSON.stringify(wlItems)); }
+
+  function wlSetPlat(p) {
+    wlCurrentPlat = p;
+    document.getElementById('wl-plat-csf').classList.toggle('active', p==='csf');
+    document.getElementById('wl-plat-st').classList.toggle('active', p==='st');
+    document.getElementById('wl-label-buy').textContent  = p==='csf' ? 'Compra CSFloat ($)'  : 'Compra Steam (PEN)';
+    document.getElementById('wl-label-sell').textContent = p==='csf' ? 'Venta Steam (PEN)'   : 'Venta CSFloat ($)';
+    wlCalcPreview();
+  }
+
+  function wlParseLink() {
+    const url    = document.getElementById('wl-link').value.trim();
+    const nameEl = document.getElementById('wl-parsed-name');
+    if (!url) { nameEl.textContent=''; wlCurrentName=null; return; }
+    const stMatch = url.match(/market\/listings\/730\/([^?#]+)/i);
+    if (stMatch) {
+      wlCurrentName      = decodeURIComponent(stMatch[1]).replace(/\+/g,' ');
+      nameEl.style.color = '#5dcaa5';
+      nameEl.textContent = wlCurrentName;
+    } else {
+      nameEl.style.color = '#f09595';
+      nameEl.textContent = 'Usa un link de Steam Market';
+      wlCurrentName = null;
+    }
+    wlCalcPreview();
+  }
+
+  function wlCalcPreview() {
+    const buy  = parseFloat(document.getElementById('wl-buy').value);
+    const sell = parseFloat(document.getElementById('wl-sell').value);
+    const prev = document.getElementById('wl-preview');
+    if (isNaN(buy)||isNaN(sell)||buy<=0||sell<=0) { prev.style.display='none'; return; }
+    prev.style.display = '';
+    if (wlCurrentPlat === 'csf') {
+      const div5  = sell / 5;
+      const p1m   = ((div5 - buy) / buy) * 100;
+      const profit= div5 - buy;
+      const col   = p1m>=10?'#5dcaa5':p1m>=7?'#fac775':'#f09595';
+      prev.innerHTML = `Steam ÷5: <strong style="color:#e8e8e4">$${div5.toFixed(2)}</strong> · P1: <strong style="color:${col}">${p1m>=0?'+':''}${p1m.toFixed(1)}%</strong> · Ganancia: <strong style="color:${profit>=0?'#5dcaa5':'#f09595'}">${profit>=0?'+':''}$${profit.toFixed(2)}</strong>`;
+    } else {
+      const stUSD = buy / 5;
+      const cfNet = sell * 0.98;
+      const p2m   = ((cfNet - stUSD) / stUSD) * 100;
+      const profit= cfNet - stUSD;
+      const col   = p2m>=20?'#5dcaa5':p2m>=15?'#fac775':'#f09595';
+      prev.innerHTML = `Compra ÷5: <strong style="color:#e8e8e4">$${stUSD.toFixed(2)}</strong> · CF neta: <strong style="color:#e8e8e4">$${cfNet.toFixed(2)}</strong> · P2: <strong style="color:${col}">${p2m>=0?'+':''}${p2m.toFixed(1)}%</strong> · Ganancia: <strong style="color:${profit>=0?'#5dcaa5':'#f09595'}">${profit>=0?'+':''}$${profit.toFixed(2)}</strong>`;
+    }
+  }
+
+  function wlAdd() {
+    const url  = document.getElementById('wl-link').value.trim();
+    const buy  = parseFloat(document.getElementById('wl-buy').value);
+    const sell = parseFloat(document.getElementById('wl-sell').value);
+    if (!url||isNaN(buy)||isNaN(sell)) { alert('Completa el link y los precios.'); return; }
+    if (!wlCurrentName) { alert('Pega un link válido de Steam Market para obtener el nombre.'); return; }
+
+    let profit, roi, p1m=null, p2m=null;
+    if (wlCurrentPlat === 'csf') {
+      const div5 = sell / 5;
+      p1m    = ((div5 - buy) / buy) * 100;
+      profit = div5 - buy;
+      roi    = profit / buy;
+    } else {
+      const stUSD = buy / 5;
+      const cfNet = sell * 0.98;
+      p2m    = ((cfNet - stUSD) / stUSD) * 100;
+      profit = cfNet - stUSD;
+      roi    = profit / stUSD;
+    }
+
+    wlItems.push({ id:Date.now(), url, name:wlCurrentName, source:wlCurrentPlat, buy, sell, profit, roi, p1m, p2m, icon: null });
+    wlSave(); wlRender();
+    // Buscar icon_url en segundo plano
+    wlFetchIcon(wlCurrentName);
+    document.getElementById('wl-link').value           = '';
+    document.getElementById('wl-buy').value            = '';
+    document.getElementById('wl-sell').value           = '';
+    document.getElementById('wl-parsed-name').textContent = '';
+    document.getElementById('wl-preview').style.display   = 'none';
+    wlCurrentName = null;
+  }
+
+  async function wlFetchIcon(name) {
+    try {
+      const res  = await fetch(`https://corsproxy.io/?https://steamcommunity.com/market/search/render/?appid=730&query=${encodeURIComponent(name)}&norender=1&count=1`);
+      const data = await res.json();
+      const icon = data?.results?.[0]?.asset_description?.icon_url;
+      if (icon) {
+        const item = wlItems.find(i => i.name === name);
+        if (item) { item.icon = icon; wlSave(); wlRender(); }
+      }
+    } catch(e) {}
+  }
+
+  function wlSetColSort(col, s) {
+    wlColSort[col] = s;
+    document.getElementById('wl-'+col+'-roi').classList.toggle('active', s==='roi');
+    document.getElementById('wl-'+col+'-profit').classList.toggle('active', s==='profit');
+    wlRender();
+  }
+
+  function wlDel(id) { wlItems=wlItems.filter(i=>i.id!==id); wlSave(); wlRender(); }
+
+  function wlRenderCol(items, colId, sort) {
+    const el = document.getElementById(colId);
+    if (!items.length) { el.innerHTML='<div class="wl-empty">Sin items</div>'; return; }
+    const sorted = [...items].sort((a,b)=> sort==='roi' ? b.roi-a.roi : b.profit-a.profit);
+    el.innerHTML = sorted.map(item => {
+      const isCsf   = item.source==='csf';
+      const buyFmt  = isCsf ? '$'+item.buy.toFixed(2)   : 'S/'+item.buy.toFixed(2);
+      const sellFmt = isCsf ? 'S/'+item.sell.toFixed(2) : '$'+item.sell.toFixed(2);
+      const buyLbl  = isCsf ? 'CF' : 'ST';
+      const sellLbl = isCsf ? 'Venta ST' : 'Venta CF';
+      const profCol = item.profit>=0?'#5dcaa5':'#f09595';
+      const margin  = item.p1m??item.p2m;
+      const pLbl    = item.p1m!==null?'P1':'P2';
+      const mOk     = item.p1m!==null ? margin>=10 : margin>=20;
+      const mWarn   = item.p1m!==null ? margin>=7  : margin>=15;
+      const bg      = mOk?'#04342c':mWarn?'#412402':'#501313';
+      const tx      = mOk?'#9fe1cb':mWarn?'#fac775':'#f7c1c1';
+      const imgSrc  = `https://api.steamapis.com/image/item/730/${encodeURIComponent(item.name)}`;
+      return `<div style="border-bottom:0.5px solid rgba(255,255,255,0.06);padding:7px 0;">
+        <div style="display:flex;gap:7px;align-items:center;margin-bottom:5px;">
+          <div style="width:36px;height:36px;flex-shrink:0;border-radius:4px;overflow:hidden;background:#141414;display:flex;align-items:center;justify-content:center;">
+            <img src="${imgSrc}" style="width:36px;height:36px;object-fit:contain;" onerror="this.parentElement.style.background='#1e1e1e';this.style.display='none'">
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;font-weight:500;color:#e8e8e4;line-height:1.3;margin-bottom:2px;">${item.name}</div>
+            <a href="${item.url}" target="_blank" style="font-size:10px;color:#378ADD;text-decoration:none;font-weight:500;">Steam Market →</a>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#555450;margin-bottom:4px;">
+          <span>${buyLbl} <strong style="color:#e8e8e4">${buyFmt}</strong></span>
+          <span>${sellLbl} <strong style="color:#e8e8e4">${sellFmt}</strong></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="background:${bg};color:${tx};padding:1px 5px;border-radius:3px;font-size:10px;">${pLbl} ${margin>=0?'+':''}${margin.toFixed(1)}%</span>
+          <span style="color:${profCol};font-size:11px;font-weight:500;">${item.profit>=0?'+':''}$${item.profit.toFixed(2)}</span>
+          <button onclick="wlDel(${item.id})" style="background:none;border:none;color:#444441;font-size:13px;cursor:pointer;padding:0;">×</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function wlRender() {
+    wlRenderCol(wlItems.filter(i=>i.source==='csf'), 'wl-col-csf', wlColSort.csf);
+    wlRenderCol(wlItems.filter(i=>i.source==='st'),  'wl-col-st',  wlColSort.st);
+  }
+
+  /* ══════════════════════════════════════
+     CALCULADORA
+  ══════════════════════════════════════ */
   function f2(n)   { return '$' + n.toFixed(2); }
   function fp(n)   { return 'S/ ' + n.toFixed(2); }
   function fpct(n) { return (n>=0?'+':'')+n.toFixed(1)+'%'; }
@@ -252,6 +969,70 @@
     return Math.max(Math.ceil(price * 0.02 * 100) / 100, 0.01);
   }
   function cfNet(price) { return price - cfFee(price); }
+
+  /* ══════════════════════════════════════
+     HISTORIAL DE CÁLCULOS
+  ══════════════════════════════════════ */
+  let calcHist = JSON.parse(localStorage.getItem('cs2_calc_hist') || '[]');
+  let calcHistTimer = null;
+
+  function calcHistSave() { localStorage.setItem('cs2_calc_hist', JSON.stringify(calcHist)); }
+
+  function calcHistAdd(data) {
+    // Debounce — guardar solo si el usuario dejó de escribir por 1.5s
+    clearTimeout(calcHistTimer);
+    calcHistTimer = setTimeout(() => {
+      // Evitar duplicados exactos consecutivos
+      const last = calcHist[0];
+      if (last && last.cfBuy===data.cfBuy && last.stSell===data.stSell && last.stBuy===data.stBuy && last.cfSell===data.cfSell) return;
+      calcHist.unshift({ ...data, ts: Date.now() });
+      if (calcHist.length > 30) calcHist = calcHist.slice(0, 30);
+      calcHistSave();
+      calcHistRender();
+    }, 1500);
+  }
+
+  function calcHistLoad(item) {
+    document.getElementById('cf-buy').value  = item.cfBuy;
+    document.getElementById('st-sell').value = item.stSell;
+    document.getElementById('st-buy').value  = item.stBuy;
+    document.getElementById('cf-sell').value = item.cfSell;
+    calc();
+    window.scrollTo(0, 0);
+  }
+
+  function calcHistRender() {
+    const el = document.getElementById('calc-hist-list');
+    if (!calcHist.length) {
+      el.innerHTML = '<div style="font-size:12px;color:#444441;text-align:center;padding:8px 0;">Los cálculos completos aparecerán aquí.</div>';
+      return;
+    }
+    el.innerHTML = calcHist.map(h => {
+      const age   = Date.now() - h.ts;
+      const label = age < 60000 ? 'hace un momento'
+                  : age < 3600000 ? `hace ${Math.floor(age/60000)}m`
+                  : age < 86400000 ? `hace ${Math.floor(age/3600000)}h`
+                  : new Date(h.ts).toLocaleDateString('es-PE',{day:'2-digit',month:'short'});
+      const mCol  = h.margin >= 10 ? '#5dcaa5' : h.margin >= 5 ? '#fac775' : '#f09595';
+      const pCol  = h.profit >= 0 ? '#5dcaa5' : '#f09595';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:0.5px solid rgba(255,255,255,0.05);cursor:pointer;" onclick="calcHistLoad(${JSON.stringify(h).replace(/"/g,'&quot;')})">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;gap:6px;font-size:11px;margin-bottom:2px;">
+            <span style="color:#555450;">CF</span><strong style="color:#e8e8e4;">$${h.cfBuy}</strong>
+            <span style="color:#444441;">→</span>
+            <span style="color:#555450;">ST</span><strong style="color:#e8e8e4;">S/${h.stSell}</strong>
+            <span style="color:#444441;">→</span>
+            <span style="color:#555450;">CF</span><strong style="color:#e8e8e4;">$${h.cfSell}</strong>
+          </div>
+          <div style="font-size:10px;color:#444441;">${label}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:12px;font-weight:500;color:${pCol};">${h.profit>=0?'+':''}$${h.profit.toFixed(2)}</div>
+          <div style="font-size:10px;color:${mCol};">${h.margin>=0?'+':''}${h.margin.toFixed(1)}%</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   function clearAll() {
     ['cf-buy','st-sell','st-buy','cf-sell'].forEach(id => document.getElementById(id).value = '');
@@ -386,7 +1167,628 @@
       document.getElementById('vt').textContent='Ciclo rentable';
       document.getElementById('vs').textContent=`Ganas ${f2(profit)} netos — ${fpct(margin)} sobre la inversión inicial.`;
     }
+
+    // Guardar en historial
+    calcHistAdd({ cfBuy, stSell, stBuy, cfSell, profit, margin });
   }
+
+  /* ══════════════════════════════════════
+     CALCULADORA ACUMULATIVA (SNAPSHOT)
+  ══════════════════════════════════════ */
+  let snapAccTotal = parseFloat(localStorage.getItem('cs2_snap_acc') || '0');
+  let snapAccLog   = JSON.parse(localStorage.getItem('cs2_snap_acc_log') || '[]');
+
+  function snapAccSave() {
+    localStorage.setItem('cs2_snap_acc', snapAccTotal.toString());
+    localStorage.setItem('cs2_snap_acc_log', JSON.stringify(snapAccLog));
+  }
+
+  function snapCalcAdd() {
+    const input = document.getElementById('snap-acc-input');
+    const qtyEl = document.getElementById('snap-acc-qty');
+    const price = parseFloat(input.value);
+    const qty   = parseFloat(qtyEl.value) || 1;
+    if (!price || price <= 0) { input.focus(); return; }
+    const subtotal = qty * price;
+    snapAccTotal += subtotal;
+    snapAccLog.push({ qty, price, subtotal });
+    snapAccSave();
+    snapAccRender();
+    input.value  = '';
+    qtyEl.value  = '1';
+    input.focus();
+  }
+
+  function snapCalcReset() {
+    if (snapAccLog.length && !confirm('¿Limpiar el acumulado?')) return;
+    snapAccTotal = 0;
+    snapAccLog   = [];
+    snapAccSave();
+    snapAccRender();
+  }
+
+  function snapCalcCopy() {
+    document.getElementById('t-inv').value = snapAccTotal.toFixed(2);
+    const btn = document.getElementById('snap-calc-copy-btn');
+    btn.textContent = '✓ copiado como inventario';
+    btn.style.color = '#5dcaa5';
+    btn.style.borderColor = '#0f6e56';
+    setTimeout(() => {
+      btn.textContent = 'usar total como inventario →';
+      btn.style.color = '#888780';
+      btn.style.borderColor = 'rgba(255,255,255,0.12)';
+    }, 1500);
+  }
+
+  function snapAccRender() {
+    const totalEl = document.getElementById('snap-acc-total');
+    const logEl   = document.getElementById('snap-acc-log');
+    if (!totalEl) return;
+    totalEl.textContent = '$' + snapAccTotal.toFixed(2);
+    if (snapAccLog.length) {
+      logEl.textContent = snapAccLog.map(e => {
+        if (typeof e === 'object') {
+          return e.qty > 1 ? `${e.qty}×$${e.price.toFixed(2)}` : `$${e.price.toFixed(2)}`;
+        }
+        return '$' + parseFloat(e).toFixed(2);
+      }).join(' + ');
+    } else {
+      logEl.textContent = 'Añade valores con ✓';
+    }
+  }
+
+  function snapCalcRender() { snapAccRender(); }
+  const GOAL_MONTHLY  = 0.15;
+  const GOAL_BIWEEKLY = Math.pow(1 + GOAL_MONTHLY, 0.5) - 1;
+
+  let tSnaps = JSON.parse(localStorage.getItem('cs2_snaps') || '[]');
+  let lnLoans = JSON.parse(localStorage.getItem('cs2_loans') || '[]');
+
+  function tSave()  { localStorage.setItem('cs2_snaps',  JSON.stringify(tSnaps));  }
+  function lnSave() { localStorage.setItem('cs2_loans',  JSON.stringify(lnLoans)); }
+
+  // Interés FIJO sobre monto original
+  function calcAmort(principal, rateMonthly, months) {
+    if (!principal || !rateMonthly || !months) return [];
+    const interesFijo = principal * (rateMonthly / 100);
+    const capitalMes  = principal / months;
+    const cuota       = interesFijo + capitalMes;
+    const rows = [];
+    let saldo = principal;
+    for (let i = 1; i <= months; i++) {
+      saldo = Math.max(saldo - capitalMes, 0);
+      rows.push({ mes: i, cuota, interes: interesFijo, capitalP: capitalMes, saldo });
+    }
+    return rows;
+  }
+
+  function lnCurrentMonth(start, months) {
+    if (!start) return 1;
+    const startDate = new Date(start + 'T12:00:00');
+    const diffDays  = (new Date() - startDate) / (1000 * 60 * 60 * 24);
+    return Math.max(1, Math.min(Math.floor(diffDays / 30) + 1, months));
+  }
+
+  // Totales agregados de todos los préstamos para usar en tRender
+  function lnTotals() {
+    let totalLoan = 0, totalInteresMes = 0, totalCapitalMes = 0,
+        totalSaldoPendiente = 0, totalInterestPaid = 0, totalCapitalPaid = 0;
+    lnLoans.forEach(ln => {
+      const rows   = calcAmort(ln.amount, ln.rate, ln.months);
+      const cur    = lnCurrentMonth(ln.start, ln.months);
+      const curRow = rows[cur - 1];
+      const prevRow = cur > 1 ? rows[cur - 2] : null;
+      totalLoan           += ln.amount;
+      totalInteresMes     += curRow ? curRow.interes  : 0;
+      totalCapitalMes     += curRow ? curRow.capitalP : 0;
+      totalSaldoPendiente += prevRow ? prevRow.saldo   : ln.amount;
+      totalInterestPaid   += rows.slice(0, cur - 1).reduce((a, r) => a + r.interes,  0);
+      totalCapitalPaid    += rows.slice(0, cur - 1).reduce((a, r) => a + r.capitalP, 0);
+    });
+    return { totalLoan, totalInteresMes, totalCapitalMes, totalSaldoPendiente, totalInterestPaid, totalCapitalPaid };
+  }
+
+  function lnToggleForm() {
+    const f = document.getElementById('ln-form');
+    f.style.display = f.style.display === 'none' ? '' : 'none';
+    if (f.style.display === '') document.getElementById('ln-start').value = new Date().toISOString().split('T')[0];
+  }
+
+  function lnAdd() {
+    const name   = document.getElementById('ln-name').value.trim();
+    const amount = parseFloat(document.getElementById('ln-amount').value);
+    const rate   = parseFloat(document.getElementById('ln-rate').value);
+    const months = parseInt(document.getElementById('ln-months').value);
+    const start  = document.getElementById('ln-start').value;
+    if (!name || isNaN(amount) || isNaN(rate) || isNaN(months) || !start) {
+      alert('Completa todos los campos.'); return;
+    }
+    lnLoans.push({ id: Date.now(), name, amount, rate, months, start });
+    lnSave(); lnRender(); tRender();
+    document.getElementById('ln-name').value   = '';
+    document.getElementById('ln-amount').value = '';
+    document.getElementById('ln-rate').value   = '0.43';
+    document.getElementById('ln-months').value = '24';
+    document.getElementById('ln-form').style.display = 'none';
+  }
+
+  function lnDel(id) {
+    if (!confirm('¿Eliminar este préstamo?')) return;
+    lnLoans = lnLoans.filter(l => l.id !== id);
+    lnSave(); lnRender(); tRender();
+  }
+
+  function lnToggleTable(id) {
+    const el = document.getElementById('ln-table-' + id);
+    if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+  }
+
+  function lnRender() {
+    const listEl    = document.getElementById('ln-list');
+    const summaryEl = document.getElementById('ln-summary');
+    if (!lnLoans.length) {
+      listEl.innerHTML    = '<div style="font-size:12px;color:#444441;text-align:center;padding:8px 0;">Sin préstamos. Añade uno.</div>';
+      summaryEl.style.display = 'none';
+      return;
+    }
+    const tot = lnTotals();
+    listEl.innerHTML = lnLoans.map(ln => {
+      const rows    = calcAmort(ln.amount, ln.rate, ln.months);
+      const cur     = lnCurrentMonth(ln.start, ln.months);
+      const curRow  = rows[cur - 1];
+      const prevRow = cur > 1 ? rows[cur - 2] : null;
+      const saldo   = prevRow ? prevRow.saldo : ln.amount;
+      const paid    = ln.amount - saldo;
+      const pct     = (paid / ln.amount * 100).toFixed(0);
+      const d       = new Date(ln.start + 'T12:00:00');
+      const df      = d.toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'2-digit' });
+      const tableRows = rows.map(r => {
+        const isC = r.mes === cur, isP = r.mes < cur;
+        return `<tr style="${isC ? 'background:rgba(93,202,165,0.07);' : isP ? 'opacity:0.4;' : ''}">
+          <td style="padding:3px 6px;color:${isC?'#5dcaa5':'#888780'}">${r.mes}${isC?' ←':''}</td>
+          <td style="padding:3px 6px;text-align:right;color:#e8e8e4">$${r.cuota.toFixed(2)}</td>
+          <td style="padding:3px 6px;text-align:right;color:#f09595">$${r.interes.toFixed(2)}</td>
+          <td style="padding:3px 6px;text-align:right;color:#5dcaa5">$${r.capitalP.toFixed(2)}</td>
+          <td style="padding:3px 6px;text-align:right;color:#888780">$${r.saldo.toFixed(2)}</td>
+        </tr>`;
+      }).join('');
+      return `<div style="background:#1e1e1e;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:0.5px solid rgba(255,255,255,0.07);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:13px;font-weight:500;color:#e8e8e4;">${ln.name}</span>
+          <div style="display:flex;gap:6px;">
+            <button class="clear-btn" onclick="lnToggleTable(${ln.id})" style="font-size:10px;padding:2px 7px;">tabla</button>
+            <button class="clear-btn" onclick="lnDel(${ln.id})" style="font-size:10px;padding:2px 7px;color:#f09595;border-color:rgba(240,149,149,0.3);">×</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#555450;margin-bottom:6px;">
+          <span>Monto <strong style="color:#e8e8e4">$${ln.amount.toFixed(2)}</strong></span>
+          <span>Tasa <strong style="color:#e8e8e4">${ln.rate}%</strong></span>
+          <span>Plazo <strong style="color:#e8e8e4">${ln.months}m</strong></span>
+          <span>Inicio <strong style="color:#e8e8e4">${df}</strong></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;">
+          <span style="color:#555450">Cuota: <strong style="color:#e8e8e4">$${curRow ? curRow.cuota.toFixed(2) : '—'}</strong></span>
+          <span style="color:#555450">Saldo: <strong style="color:#f09595">$${saldo.toFixed(2)}</strong></span>
+          <span style="color:#555450">Pagado: <strong style="color:#5dcaa5">$${paid.toFixed(2)}</strong></span>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:#1d9e75;border-radius:2px;"></div>
+        </div>
+        <div style="text-align:right;font-size:10px;color:#444441;margin-top:3px;">mes ${cur} de ${ln.months} · ${pct}% pagado</div>
+        <div id="ln-table-${ln.id}" style="display:none;margin-top:8px;border-top:0.5px solid rgba(255,255,255,0.07);padding-top:8px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr>
+              <th style="text-align:left;color:#555450;padding:3px 6px;border-bottom:0.5px solid rgba(255,255,255,0.07)">Mes</th>
+              <th style="text-align:right;color:#555450;padding:3px 6px;border-bottom:0.5px solid rgba(255,255,255,0.07)">Cuota</th>
+              <th style="text-align:right;color:#555450;padding:3px 6px;border-bottom:0.5px solid rgba(255,255,255,0.07)">Interés</th>
+              <th style="text-align:right;color:#555450;padding:3px 6px;border-bottom:0.5px solid rgba(255,255,255,0.07)">Capital</th>
+              <th style="text-align:right;color:#555450;padding:3px 6px;border-bottom:0.5px solid rgba(255,255,255,0.07)">Saldo</th>
+            </tr></thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+
+    summaryEl.style.display = '';
+    summaryEl.innerHTML =
+      `Total deuda: <strong style="color:#f09595">$${tot.totalSaldoPendiente.toFixed(2)}</strong> · ` +
+      `Cuota total mes: <strong style="color:#e8e8e4">$${(tot.totalInteresMes + tot.totalCapitalMes).toFixed(2)}</strong> ` +
+      `(interés <span style="color:#f09595">$${tot.totalInteresMes.toFixed(2)}</span> + capital <span style="color:#5dcaa5">$${tot.totalCapitalMes.toFixed(2)}</span>)`;
+  }
+
+  function tUsd(v)    { return '$' + parseFloat(v).toFixed(2); }
+  function tPct(v)    { return (v >= 0 ? '+' : '') + (v * 100).toFixed(2) + '%'; }
+  function tPctAbs(v) { return (v * 100).toFixed(2) + '%'; }
+
+  function tAddSnap() {
+    const date  = document.getElementById('t-date').value;
+    const inv   = parseFloat(document.getElementById('t-inv').value);
+    const free  = parseFloat(document.getElementById('t-free').value);
+    const notes = document.getElementById('t-notes').value.trim();
+    if (!date || isNaN(inv) || isNaN(free)) { alert('Completa fecha, inventario y capital libre.'); return; }
+    const existing = tSnaps.findIndex(s => s.date === date);
+    if (existing >= 0) {
+      if (!confirm('Ya hay un snapshot para esta fecha. ¿Reemplazar?')) return;
+      tSnaps.splice(existing, 1);
+    }
+    tSnaps.push({ id: Date.now(), date, inv, free, notes });
+    tSnaps.sort((a, b) => a.date.localeCompare(b.date));
+    tSave();
+    document.getElementById('t-inv').value   = '';
+    document.getElementById('t-free').value  = '';
+    document.getElementById('t-notes').value = '';
+    tRender();
+  }
+
+  function tDelSnap(id) {
+    tSnaps = tSnaps.filter(s => s.id !== id);
+    tSave(); tRender();
+  }
+
+  // Capital devuelto acumulado de todos los préstamos hasta una fecha dada
+  function lnCapitalPaidAtDate(dateStr) {
+    let total = 0;
+    const target = new Date(dateStr + 'T12:00:00');
+    lnLoans.forEach(ln => {
+      if (!ln.start) return;
+      const start   = new Date(ln.start + 'T12:00:00');
+      const diffDays = (target - start) / (1000 * 60 * 60 * 24);
+      if (diffDays < 0) return;
+      const mesNum  = Math.min(Math.floor(diffDays / 30), ln.months);
+      total += (ln.amount / ln.months) * mesNum;
+    });
+    return total;
+  }
+
+  function tRender() {
+    const { totalLoan: loan, totalInteresMes: interesMes, totalCapitalMes: capitalMes,
+            totalSaldoPendiente: saldoPendiente, totalInterestPaid: interestPaid,
+            totalCapitalPaid: capitalPaid } = lnTotals();
+    const cuotaMes   = interesMes + capitalMes;
+    const current    = 1; // usado solo como referencia, cada préstamo tiene el suyo
+
+    const sorted    = [...tSnaps].sort((a, b) => a.date.localeCompare(b.date));
+    const metricsEl = document.getElementById('t-metrics');
+    const listEl    = document.getElementById('t-snap-list');
+    const metaCard  = document.getElementById('t-meta-card');
+
+    if (!sorted.length) {
+      metricsEl.innerHTML = `
+        <div class="t-metric"><div class="t-ml">Capital total</div><div class="t-mv">—</div></div>
+        <div class="t-metric"><div class="t-ml">Capital propio</div><div class="t-mv">—</div></div>
+        <div class="t-metric"><div class="t-ml">Ganancia neta</div><div class="t-mv">—</div></div>
+        <div class="t-metric"><div class="t-ml">Meta 15%/mes</div><div class="t-mv">—</div></div>`;
+      listEl.innerHTML = '<div class="t-empty">Sin snapshots. Añade el primero cada ~15 días.</div>';
+      metaCard.style.display = 'none';
+      return;
+    }
+
+    const last       = sorted[sorted.length - 1];
+    const first      = sorted[0];
+    const lastTotal  = last.inv + last.free;
+    const firstTotal = first.inv + first.free;
+
+    // Capital propio = total - saldo pendiente del préstamo
+    const ownCapital = lastTotal - saldoPendiente;
+
+    const totalGainBruto = lastTotal - firstTotal;
+    // Ganancia patrimonio = bruta - solo intereses (capital devuelto es tuyo)
+    const totalGainNeto     = totalGainBruto - interestPaid;
+    // Ganancia bolsillo = bruta - cuota completa (interés + capital devuelto)
+    const totalGainBolsillo = totalGainBruto - interestPaid - capitalPaid;
+    const totalROI          = firstTotal ? totalGainBruto / firstTotal : 0;
+
+    const prev          = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
+    const prevTotal     = prev ? prev.inv + prev.free : null;
+    const lastDelta     = prevTotal !== null ? lastTotal - prevTotal : null;
+    const lastROI       = prevTotal ? lastDelta / prevTotal : null;
+    const interestPeriod = interesMes * 0.5;
+    const capitalPeriod  = capitalMes * 0.5;
+    // Neto patrimonio del período = delta - interés
+    const lastDeltaNetoPatrim = lastDelta !== null ? lastDelta - interestPeriod : null;
+    // Neto bolsillo del período = delta - interés - capital devuelto
+    const lastDeltaNetoBolsillo = lastDelta !== null ? lastDelta - interestPeriod - capitalPeriod : null;
+    const lastROINeto    = prevTotal && lastDeltaNetoPatrim !== null ? lastDeltaNetoPatrim / prevTotal : null;
+
+    const metaStatus = lastROI !== null
+      ? (lastROI >= GOAL_BIWEEKLY
+          ? '<span style="color:#5dcaa5">✓ en meta</span>'
+          : '<span style="color:#fac775">por debajo</span>')
+      : '—';
+
+    metricsEl.innerHTML = `
+      <div class="t-metric">
+        <div class="t-ml">Capital total</div>
+        <div class="t-mv">${tUsd(lastTotal)}</div>
+        <div class="t-ms">inv ${tUsd(last.inv)} · libre ${tUsd(last.free)}</div>
+      </div>
+      <div class="t-metric">
+        <div class="t-ml">Capital propio</div>
+        <div class="t-mv ${ownCapital >= 0 ? 'good' : 'bad'}">${tUsd(ownCapital)}</div>
+        <div class="t-ms">${loan > 0 ? 'deuda ' + tUsd(saldoPendiente) : 'sin préstamo'}</div>
+      </div>
+      <div class="t-metric">
+        <div class="t-ml">Gan. patrimonio</div>
+        <div class="t-mv ${totalGainNeto >= 0 ? 'good' : 'bad'}">${(totalGainNeto >= 0 ? '+' : '') + tUsd(totalGainNeto)}</div>
+        <div class="t-ms">bruta − intereses</div>
+      </div>
+      <div class="t-metric">
+        <div class="t-ml">Gan. bolsillo</div>
+        <div class="t-mv ${totalGainBolsillo >= 0 ? 'good' : 'bad'}">${(totalGainBolsillo >= 0 ? '+' : '') + tUsd(totalGainBolsillo)}</div>
+        <div class="t-ms">bruta − cuota total</div>
+      </div>
+      <div class="t-metric">
+        <div class="t-ml">Meta 15%/mes</div>
+        <div class="t-mv" style="font-size:13px;">${metaStatus}</div>
+        <div class="t-ms">período: +${tPctAbs(GOAL_BIWEEKLY)}</div>
+      </div>
+      <div class="t-metric">
+        <div class="t-ml">Bruta total</div>
+        <div class="t-mv ${totalGainBruto >= 0 ? 'good' : 'bad'}">${(totalGainBruto >= 0 ? '+' : '') + tUsd(totalGainBruto)}</div>
+        <div class="t-ms">${tPct(totalROI)} desde inicio</div>
+      </div>`;
+
+    // Barra de progreso meta
+    if (sorted.length >= 2 && prevTotal) {
+      metaCard.style.display = '';
+      const needed   = prevTotal * GOAL_MONTHLY;
+      const progress = Math.min(Math.max(totalGainBruto / needed, 0), 1);
+      const onTrack  = lastROI >= GOAL_BIWEEKLY;
+      const badge    = document.getElementById('t-meta-badge');
+      badge.textContent = onTrack ? 'En meta' : 'Por debajo';
+      badge.className   = 't-badge ' + (onTrack ? 'ok' : 'warn');
+      const interestLine = loan > 0
+        ? `<br>Interés período: <strong style="color:#f09595">${tUsd(interestPeriod)}</strong> · Capital devuelto: <strong style="color:#5dcaa5">${tUsd(capitalPeriod)}</strong> · Patrimonio: <strong style="color:#e8e8e4">${lastDeltaNetoPatrim !== null ? (lastDeltaNetoPatrim >= 0 ? '+' : '') + tUsd(lastDeltaNetoPatrim) : '—'}</strong> · Bolsillo: <strong style="color:#e8e8e4">${lastDeltaNetoBolsillo !== null ? (lastDeltaNetoBolsillo >= 0 ? '+' : '') + tUsd(lastDeltaNetoBolsillo) : '—'}</strong>`
+        : '';
+      document.getElementById('t-meta-text').innerHTML =
+        `Último período: bruto <strong style="color:#e8e8e4">${tPct(lastROI)}</strong> · neto <strong style="color:#e8e8e4">${lastROINeto !== null ? tPct(lastROINeto) : '—'}</strong> · Meta: <strong style="color:#e8e8e4">+${tPctAbs(GOAL_BIWEEKLY)}</strong><br>` +
+        `Para +15% sobre total necesitas <strong style="color:#e8e8e4">${tUsd(needed)}</strong> (llevas ${tUsd(Math.max(totalGainBruto, 0))})` +
+        interestLine;
+      document.getElementById('t-meta-pct').textContent = (progress * 100).toFixed(0) + '%';
+      document.getElementById('t-progress-fill').style.width  = (progress * 100).toFixed(1) + '%';
+      document.getElementById('t-progress-fill').style.background = progress >= 1 ? '#1d9e75' : '#378ADD';
+    } else {
+      metaCard.style.display = 'none';
+    }
+
+    // Contador días desde último snapshot
+    const reminderEl = document.getElementById('t-snap-reminder');
+    if (sorted.length) {
+      const lastDate  = new Date(sorted[sorted.length - 1].date + 'T12:00:00');
+      const today     = new Date();
+      const daysSince = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+      const daysLeft  = 15 - daysSince;
+      const progress  = Math.min(daysSince / 15, 1);
+      const barColor  = daysSince >= 15 ? '#a32d2d' : daysSince >= 12 ? '#854f0b' : '#1d9e75';
+      reminderEl.style.display = '';
+
+      let bg, border, titleColor, subColor, statusLabel;
+      if (daysSince >= 15) {
+        bg = '#501313'; border = '#a32d2d';
+        titleColor = '#f7c1c1'; subColor = '#f09595';
+        statusLabel = 'Snapshot pendiente';
+      } else if (daysSince >= 12) {
+        bg = '#412402'; border = '#854f0b';
+        titleColor = '#fac775'; subColor = '#ef9f27';
+        statusLabel = 'Próximo snapshot pronto';
+      } else {
+        bg = '#141414'; border = 'rgba(255,255,255,0.08)';
+        titleColor = '#e8e8e4'; subColor = '#888780';
+        statusLabel = 'Todo en orden';
+      }
+
+      const lastDateFmt = lastDate.toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'2-digit' });
+
+      reminderEl.innerHTML = `
+        <div style="background:${bg};border:0.5px solid ${border};border-radius:12px;padding:18px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+            <div>
+              <div style="font-size:11px;font-weight:500;color:${subColor};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${statusLabel}</div>
+              <div style="font-size:13px;color:${subColor};">Último snapshot: <strong style="color:${titleColor};">${lastDateFmt}</strong> · hace <strong style="color:${titleColor};">${daysSince} día${daysSince!==1?'s':''}</strong></div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;margin-left:16px;">
+              <div style="font-size:42px;font-weight:500;color:${titleColor};line-height:1;">${daysSince >= 15 ? '+'+daysSince : daysLeft}</div>
+              <div style="font-size:11px;color:${subColor};margin-top:2px;">${daysSince >= 15 ? 'días de retraso' : 'días restantes'}</div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.07);border-radius:4px;height:6px;overflow:hidden;">
+            <div style="height:100%;width:${(progress*100).toFixed(1)}%;background:${barColor};border-radius:4px;transition:width .4s;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:${subColor};margin-top:5px;opacity:.7;">
+            <span>día 0</span>
+            <span>día 15</span>
+          </div>
+        </div>`;
+    } else {
+      reminderEl.style.display = 'none';
+    }
+
+    // Gráfico
+    tRenderChart(sorted);
+
+    // Lista snapshots
+    const rows = [...sorted].reverse();
+    if (!rows.length) { listEl.innerHTML = '<div class="t-empty">Sin snapshots.</div>'; return; }
+
+    listEl.innerHTML = rows.map(s => {
+      const idx    = sorted.indexOf(s);
+      const prevS  = idx > 0 ? sorted[idx - 1] : null;
+      const total  = s.inv + s.free;
+      const prevT  = prevS ? prevS.inv + prevS.free : null;
+
+      // Capital devuelto acumulado hasta cada snapshot
+      const capPaidNow  = lnCapitalPaidAtDate(s.date);
+      const capPaidPrev = prevS ? lnCapitalPaidAtDate(prevS.date) : capPaidNow;
+      const capDevueltoperiodo = capPaidNow - capPaidPrev;
+
+      // Delta bruto (incluye el efecto del pago de capital)
+      const delta = prevT !== null ? total - prevT : null;
+      // Delta real de negocio: ajustamos sumando el capital devuelto en el período
+      // porque ese dinero "salió" del balance pero no es pérdida
+      const deltaReal         = delta !== null ? delta + capDevueltoperiodo : null;
+      const deltaNetoPatrim   = deltaReal !== null ? deltaReal - interestPeriod : null;
+      const deltaNetoBolsillo = delta !== null ? delta - interestPeriod : null;
+      const roi    = prevT ? (deltaReal !== null ? deltaReal : delta) / prevT : null;
+      const d      = new Date(s.date + 'T12:00:00');
+      const df     = d.toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'2-digit' });
+
+      let deltaHtml = '';
+      if (delta !== null) {
+        const colReal = deltaReal >= 0 ? '#5dcaa5' : '#f09595';
+        const colBrut = delta > 0 ? '#5dcaa5' : delta < 0 ? '#f09595' : '#888780';
+        const colP    = deltaNetoPatrim !== null ? (deltaNetoPatrim >= 0 ? '#5dcaa5' : '#f09595') : '#888780';
+        const colB    = deltaNetoBolsillo !== null ? (deltaNetoBolsillo >= 0 ? '#5dcaa5' : '#f09595') : '#888780';
+        const roiBadgeClass = roi >= GOAL_BIWEEKLY ? 'ok' : roi >= 0 ? 'warn' : 'bad';
+        const metaText = roi >= GOAL_BIWEEKLY ? '✓ meta' : 'falta ' + tPctAbs(Math.max(GOAL_BIWEEKLY - roi, 0));
+        const loanLines = loan > 0 ? `
+          <div style="border-top:0.5px solid rgba(255,255,255,0.05);margin-top:4px;padding-top:4px;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;">
+              <span style="color:#555450">real negocio</span>
+              <span style="color:${colReal};font-weight:500">${deltaReal >= 0 ? '+' : ''}${tUsd(deltaReal)}</span>
+              <span style="color:#444441">+${tUsd(capDevueltoperiodo)} cap. devuelto</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;">
+              <span style="color:#555450">ganancia real</span>
+              <span style="color:${colP};font-weight:500">${deltaNetoPatrim !== null ? (deltaNetoPatrim >= 0 ? '+' : '') + tUsd(deltaNetoPatrim) : '—'}</span>
+              <span style="color:#444441">−${tUsd(interestPeriod)} interés</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0;">
+              <span style="color:#555450">efectivo libre</span>
+              <span style="color:${colB};font-weight:500">${deltaNetoBolsillo !== null ? (deltaNetoBolsillo >= 0 ? '+' : '') + tUsd(deltaNetoBolsillo) : '—'}</span>
+              <span style="color:#444441">−${tUsd(interestPeriod + capDevueltoperiodo)} cuota total</span>
+            </div>
+          </div>` : '';
+        deltaHtml = `
+          <div class="t-delta-row">
+            <span style="color:#555450">balance</span>
+            <span style="color:${colBrut};font-weight:500">${delta >= 0 ? '+' : ''}${tUsd(delta)}</span>
+            <span class="t-badge ${roiBadgeClass}">${tPct(roi)}</span>
+            <span style="color:#555450;font-size:10px">${metaText}</span>
+          </div>${loanLines}`;
+      }
+
+      return `
+        <div class="t-snap">
+          <div class="t-snap-header">
+            <span class="t-snap-date">${df}</span>
+            <span class="t-snap-total">${tUsd(total)}</span>
+            <button class="t-del" onclick="tDelSnap(${s.id})">×</button>
+          </div>
+          <div class="t-snap-body">
+            <span>Inventario <strong>${tUsd(s.inv)}</strong></span>
+            <span>Libre <strong>${tUsd(s.free)}</strong></span>
+          </div>
+          ${deltaHtml}
+          ${s.notes ? `<div class="t-snap-notes">${s.notes}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function tRenderChart(sorted) {
+    const card = document.getElementById('t-chart-card');
+    if (sorted.length < 2) { card.style.display='none'; return; }
+    card.style.display = '';
+
+    const GOAL_M     = 0.15;
+    const firstTotal = sorted[0].inv + sorted[0].free;
+    const totals     = sorted.map(s => s.inv + s.free);
+    const metas      = sorted.map((_, i) => parseFloat((firstTotal * Math.pow(1 + GOAL_M, i * 0.5)).toFixed(2)));
+    const labels     = sorted.map(s => {
+      const d = new Date(s.date + 'T12:00:00');
+      return d.toLocaleDateString('es-PE', { day:'2-digit', month:'short' });
+    });
+
+    const allVals = [...totals, ...metas];
+    const minY = Math.floor(Math.min(...allVals) * 0.97 / 500) * 500;
+    const maxY = Math.ceil( Math.max(...allVals) * 1.03 / 500) * 500;
+
+    const isDark   = true; // app siempre dark
+    const gridCol  = 'rgba(255,255,255,0.06)';
+    const tickCol  = '#555450';
+
+    const chartEl = document.getElementById('t-chart');
+    chartEl.innerHTML = '<div style="position:relative;width:100%;height:140px;"><canvas id="t-canvas"></canvas></div>';
+
+    if (window._tChart) { window._tChart.destroy(); window._tChart = null; }
+
+    const ctx = document.getElementById('t-canvas');
+    if (!ctx) return;
+
+    window._tChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Capital total',
+            data: totals,
+            borderColor: '#1D9E75',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#1D9E75',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.3,
+            fill: false,
+          },
+          {
+            label: 'Meta +15%/mes',
+            data: metas,
+            borderColor: '#E24B4A',
+            borderWidth: 1.5,
+            borderDash: [5, 4],
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0.3,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e1e1e',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            titleColor: '#e8e8e4',
+            bodyColor: '#888780',
+            padding: 8,
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString()}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridCol, drawTicks: false },
+            border: { color: gridCol },
+            ticks: { color: tickCol, font: { size: 10 }, padding: 6,
+              maxTicksLimit: 6, maxRotation: 0 }
+          },
+          y: {
+            min: minY, max: maxY,
+            grid: { color: gridCol, drawTicks: false },
+            border: { display: false },
+            ticks: { color: tickCol, font: { size: 10 }, padding: 6,
+              callback: v => '$' + (v/1000).toFixed(1) + 'k' }
+          }
+        }
+      }
+    });
+  }
+
+  // Init
+  document.getElementById('t-date').value = new Date().toISOString().split('T')[0];
+  applyLayout();
+  calcHistRender();
+  snapCalcRender();
+  lnRender();
+  tRender();
+  wlRender();
 </script>
 </body>
 </html>
