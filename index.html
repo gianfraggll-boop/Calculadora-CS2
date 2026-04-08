@@ -1508,30 +1508,56 @@
     const chartCard = document.getElementById('ac-chart-card');
     if (allDates.length >= 2) {
       chartCard.style.display = '';
-      const labels   = allDates.map(d => new Date(d+'T12:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short'}));
+      const labels = allDates.map(d => new Date(d+'T12:00:00').toLocaleDateString('es-PE',{day:'2-digit',month:'short'}));
+
       const totalByDate = allDates.map(d =>
         acAccounts.reduce((sum, acc) => {
-          // Usar último snapshot conocido hasta esa fecha
           const snaps = acc.snaps.filter(s => s.date <= d);
           const last  = snaps[snaps.length - 1];
           return sum + (last ? last.inv + last.free : 0);
         }, 0)
       );
-      // Meta: +7.5% bimensual sobre el primer punto
+
+      // Capital propio = total - saldo pendiente del préstamo en esa fecha
+      const propioByDate = allDates.map((d, i) => {
+        const total = totalByDate[i];
+        // Calcular saldo pendiente en esa fecha
+        let saldoPendiente = 0;
+        lnLoans.forEach(ln => {
+          if (!ln.start) return;
+          const start    = new Date(ln.start + 'T12:00:00');
+          const fecha    = new Date(d + 'T12:00:00');
+          const diffDays = (fecha - start) / (1000 * 60 * 60 * 24);
+          if (diffDays < 0) { saldoPendiente += ln.amount; return; }
+          const mesNum   = Math.min(Math.floor(diffDays / 30), ln.months);
+          const pagado   = (ln.amount / ln.months) * mesNum;
+          saldoPendiente += Math.max(ln.amount - pagado, 0);
+        });
+        return total - saldoPendiente;
+      });
+
       const firstVal = totalByDate[0] || 0;
       const metaData = allDates.map((d, i) => firstVal * Math.pow(1 + GOAL_BIWEEKLY, i));
 
+      const hasLoans = lnLoans.length > 0;
+
       document.getElementById('ac-legend').innerHTML = `
         <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555450;"><span style="width:8px;height:8px;border-radius:2px;background:#1D9E75;display:inline-block;"></span>Capital total</span>
+        ${hasLoans ? `<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555450;"><span style="width:8px;height:8px;border-radius:2px;background:#378ADD;display:inline-block;"></span>Capital propio</span>` : ''}
         <span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555450;"><span style="display:inline-flex;gap:2px;"><span style="width:5px;height:2px;background:#E24B4A;"></span><span style="width:5px;height:2px;background:#E24B4A;"></span></span>Meta +15%</span>`;
+
+      const datasets = [
+        { label: 'Capital total', data: totalByDate, borderColor: '#1D9E75', borderWidth: 2, pointBackgroundColor: '#1D9E75', pointRadius: 3, tension: 0.3, fill: false },
+        { label: 'Meta', data: metaData, borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false }
+      ];
+      if (hasLoans) {
+        datasets.splice(1, 0, { label: 'Capital propio', data: propioByDate, borderColor: '#378ADD', borderWidth: 2, pointBackgroundColor: '#378ADD', pointRadius: 3, tension: 0.3, fill: false });
+      }
 
       if (acChart) { acChart.destroy(); acChart = null; }
       acChart = new Chart(document.getElementById('ac-chart'), {
         type: 'line',
-        data: { labels, datasets: [
-          { label: 'Capital total', data: totalByDate, borderColor: '#1D9E75', borderWidth: 2, pointBackgroundColor: '#1D9E75', pointRadius: 3, tension: 0.3, fill: false },
-          { label: 'Meta', data: metaData, borderColor: '#E24B4A', borderWidth: 1.5, borderDash: [4,4], pointRadius: 0, tension: 0.3, fill: false }
-        ]},
+        data: { labels, datasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
