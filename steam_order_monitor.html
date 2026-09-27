@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor Órdenes Steam</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e8e8e4;
+      min-height: 100vh;
+      padding: 20px 16px;
+    }
+    .container { max-width: 680px; margin: 0 auto; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    h1 { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #5dcaa5; }
+    .dot.red { background: #f09595; }
+    .status-bar {
+      background: #141414;
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #888780;
+    }
+    .status-left { display: flex; align-items: center; gap: 8px; }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: #5dcaa5; animation: pulse 2s infinite; }
+    .pulse.off { background: #555450; animation: none; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .next-check { color: #5dcaa5; font-weight: 500; }
+    .btn {
+      background: #1e1e1e;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 7px;
+      color: #e8e8e4;
+      font-size: 12px;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .btn:hover { border-color: rgba(255,255,255,0.3); }
+    .btn.primary { background: #5dcaa5; color: #0a0a0a; border-color: transparent; font-weight: 500; }
+    .btn.primary:hover { background: #4db896; }
+    .btn-row { display: flex; gap: 8px; }
+    .card {
+      background: #141414;
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .card.alert { border-color: #f09595; }
+    .card.ok { border-color: #5dcaa5; }
+    .card.loading { opacity: 0.6; }
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .item-name { font-size: 13px; font-weight: 500; color: #e8e8e4; flex: 1; }
+    .badge {
+      font-size: 11px; font-weight: 500; padding: 3px 8px;
+      border-radius: 5px; white-space: nowrap; flex-shrink: 0;
+    }
+    .badge.ok   { background: #04342c; color: #9fe1cb; }
+    .badge.warn { background: #501313; color: #f7c1c1; }
+    .badge.loading { background: #1e1e1e; color: #555450; }
+    .prices { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .price-box { background: #1e1e1e; border-radius: 7px; padding: 8px 10px; }
+    .price-label { font-size: 10px; color: #555450; margin-bottom: 3px; }
+    .price-val { font-size: 16px; font-weight: 500; color: #e8e8e4; }
+    .price-val.green { color: #5dcaa5; }
+    .price-val.red { color: #f09595; }
+    .input-row { display: flex; align-items: center; gap: 8px; }
+    .input-label { font-size: 11px; color: #888780; white-space: nowrap; }
+    input[type=number] {
+      width: 100px; height: 30px; padding: 0 8px;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 7px; font-size: 13px;
+      color: #e8e8e4; background: #1e1e1e; outline: none;
+      -moz-appearance: textfield;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type=number]:focus { border-color: rgba(255,255,255,0.35); }
+    input[type=number]::placeholder { color: #444441; }
+    .url-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .url-input {
+      flex: 1; height: 30px; padding: 0 8px;
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 7px; font-size: 11px;
+      color: #888780; background: #1a1a1a; outline: none;
+    }
+    .url-input:focus { border-color: rgba(255,255,255,0.25); color: #e8e8e4; }
+    .remove-btn {
+      background: none; border: none; color: #444441;
+      cursor: pointer; font-size: 16px; padding: 0 4px; line-height: 1;
+    }
+    .remove-btn:hover { color: #f09595; }
+    .add-card {
+      background: #0f0f0f;
+      border: 0.5px dashed rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #444441;
+      font-size: 13px;
+      gap: 8px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-card:hover { border-color: rgba(255,255,255,0.2); color: #888780; }
+    .alert-banner {
+      background: #501313;
+      border: 0.5px solid #a32d2d;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: #f7c1c1;
+      display: none;
+    }
+    .footer { margin-top: 14px; font-size: 11px; color: #333330; text-align: center; }
+    .separator { border: none; border-top: 0.5px solid rgba(255,255,255,0.07); margin: 10px 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><span class="dot" id="main-dot"></span>Monitor Órdenes Steam</h1>
+    <div class="btn-row">
+      <button class="btn" onclick="checkAll()">Revisar ahora</button>
+      <button class="btn primary" onclick="toggleAuto()" id="auto-btn">Iniciar auto</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-left">
+      <div class="pulse off" id="pulse-dot"></div>
+      <span id="status-text">Auto-revisión desactivada</span>
+    </div>
+    <span>Próxima revisión: <span class="next-check" id="countdown">—</span></span>
+  </div>
+
+  <div class="alert-banner" id="alert-banner"></div>
+
+  <div id="items-container"></div>
+
+  <div class="add-card" onclick="addItem()">
+    <span style="font-size:18px;">+</span> Agregar item
+  </div>
+
+  <div class="footer">Precios en PEN (S/) · Steam Market API · Actualiza cada 15 min</div>
+</div>
+
+<script>
+const DEFAULT_ITEMS = [
+  {
+    name: "Souvenir M4A1-S | Fade (Factory New)",
+    url: "https://steamcommunity.com/market/listings/730/Souvenir%20M4A1-S%20%7C%20Fade%20%28Factory%20New%29",
+    marketHashName: "Souvenir M4A1-S | Fade (Factory New)",
+    myOrder: ""
+  },
+  {
+    name: "ESL One Katowice 2015 Challengers (Holo-Foil)",
+    url: "https://steamcommunity.com/market/listings/730/ESL%20One%20Katowice%202015%20Challengers%20%28Holo-Foil%29",
+    marketHashName: "ESL One Katowice 2015 Challengers (Holo-Foil)",
+    myOrder: ""
+  },
+  {
+    name: "Sticker | Crown (Foil)",
+    url: "https://steamcommunity.com/market/listings/730/Sticker%20%7C%20Crown%20%28Foil%29",
+    marketHashName: "Sticker | Crown (Foil)",
+    myOrder: ""
+  },
+  {
+    name: "Sticker | Winged Defuser",
+    url: "https://steamcommunity.com/market/listings/730/Sticker%20%7C%20Winged%20Defuser",
+    marketHashName: "Sticker | Winged Defuser",
+    myOrder: ""
+  },
+  {
+    name: "Sticker | Titan (Holo) | Katowice 2015",
+    url: "https://steamcommunity.com/market/listings/730/Sticker%20%7C%20Titan%20(Holo)%20%7C%20Katowice%202015",
+    marketHashName: "Sticker | Titan (Holo) | Katowice 2015",
+    myOrder: ""
+  }
+];
+
+let items = JSON.parse(localStorage.getItem('steam-monitor-items') || 'null') || DEFAULT_ITEMS;
+let prices = {};
+let autoInterval = null;
+let countdownInterval = null;
+let nextCheckTime = null;
+let isAuto = false;
+
+function save() {
+  localStorage.setItem('steam-monitor-items', JSON.stringify(items));
+}
+
+function getMarketName(url) {
+  try {
+    const parts = url.split('/listings/730/');
+    if (parts[1]) return decodeURIComponent(parts[1].split('?')[0]);
+  } catch(e) {}
+  return null;
+}
+
+async function fetchPrice(marketHashName) {
+  const encoded = encodeURIComponent(marketHashName);
+  const url = `https://steamcommunity.com/market/itemordershistogram?country=PE&language=english&currency=7&item_nameid=0&two_factor=0`;
+  // Use priceoverview endpoint
+  const apiUrl = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=7&market_hash_name=${encoded}`;
+  try {
+    const res = await fetch(apiUrl);
+    const data = await res.json();
+    if (data.success) {
+      return {
+        lowest_sell: data.lowest_price || null,
+        highest_buy: data.median_price || null,
+        volume: data.volume || null,
+        raw: data
+      };
+    }
+  } catch(e) {}
+  return null;
+}
+
+async function fetchOrderBook(marketHashName) {
+  // Try to get buy order data from Steam
+  const encoded = encodeURIComponent(marketHashName);
+  const apiUrl = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=7&market_hash_name=${encoded}`;
+  try {
+    const res = await fetch(apiUrl, { mode: 'cors' });
+    const data = await res.json();
+    if (data && data.success) {
+      const parsePrice = s => s ? parseFloat(s.replace(/[^0-9.]/g,'')) : null;
+      return {
+        lowest_sell: parsePrice(data.lowest_price),
+        median:      parsePrice(data.median_price),
+        volume:      data.volume
+      };
+    }
+  } catch(e) {}
+  return null;
+}
+
+function f2(n) { return n != null ? 'S/ ' + n.toFixed(2) : '—'; }
+
+function renderAll() {
+  const container = document.getElementById('items-container');
+  container.innerHTML = '';
+  items.forEach((item, i) => renderItem(item, i, container));
+}
+
+function renderItem(item, i, container) {
+  const p = prices[i];
+  const myOrder = parseFloat(item.myOrder) || null;
+  const highestBuy = p?.median || null;
+  const lowestSell = p?.lowest_sell || null;
+
+  let statusBadge = '<span class="badge loading">Sin datos</span>';
+  let cardClass = 'card';
+  let alertText = '';
+
+  if (p && myOrder) {
+    if (highestBuy && highestBuy > myOrder) {
+      statusBadge = `<span class="badge warn">⚠ Te superaron</span>`;
+      cardClass = 'card alert';
+      alertText = `${item.name}: orden más alta S/ ${highestBuy.toFixed(2)} > tu orden S/ ${myOrder.toFixed(2)}`;
+    } else {
+      statusBadge = `<span class="badge ok">✓ Eres el más alto</span>`;
+      cardClass = 'card ok';
+    }
+  } else if (p) {
+    statusBadge = '<span class="badge loading">Ingresa tu orden</span>';
+  }
+
+  const div = document.createElement('div');
+  div.className = cardClass;
+  div.id = `item-${i}`;
+  div.innerHTML = `
+    <div class="card-header">
+      <span class="item-name">${item.name}</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        ${statusBadge}
+        <button class="remove-btn" onclick="removeItem(${i})">×</button>
+      </div>
+    </div>
+    <div class="prices">
+      <div class="price-box">
+        <div class="price-label">Venta más baja</div>
+        <div class="price-val">${p ? f2(lowestSell) : '—'}</div>
+      </div>
+      <div class="price-box">
+        <div class="price-label">Precio mediano</div>
+        <div class="price-val">${p ? f2(highestBuy) : '—'}</div>
+      </div>
+      <div class="price-box">
+        <div class="price-label">Mi orden de compra</div>
+        <div class="price-val ${myOrder ? (highestBuy && highestBuy > myOrder ? 'red' : 'green') : ''}">${myOrder ? f2(myOrder) : '—'}</div>
+      </div>
+    </div>
+    <div class="separator"></div>
+    <div class="input-row">
+      <span class="input-label">Mi orden (S/):</span>
+      <input type="number" placeholder="S/" step="0.01" min="0.01"
+        value="${item.myOrder || ''}"
+        onchange="updateOrder(${i}, this.value)">
+      <span style="font-size:11px;color:#555450;margin-left:4px;">${p?.volume ? `Vol: ${p.volume}` : ''}</span>
+    </div>
+    <div class="url-row">
+      <span class="input-label" style="font-size:10px;">URL:</span>
+      <input class="url-input" type="text" value="${item.url}"
+        placeholder="https://steamcommunity.com/market/listings/730/..."
+        onchange="updateUrl(${i}, this.value)">
+    </div>
+  `;
+  container.appendChild(div);
+  return alertText;
+}
+
+function updateOrder(i, val) {
+  items[i].myOrder = val;
+  save();
+  renderAll();
+  checkAlerts();
+}
+
+function updateUrl(i, val) {
+  items[i].url = val;
+  const name = getMarketName(val);
+  if (name) {
+    items[i].name = name;
+    items[i].marketHashName = name;
+  }
+  save();
+  renderAll();
+}
+
+function removeItem(i) {
+  items.splice(i, 1);
+  delete prices[i];
+  save();
+  renderAll();
+}
+
+function addItem() {
+  items.push({ name: 'Nuevo item', url: '', marketHashName: '', myOrder: '' });
+  save();
+  renderAll();
+  // focus last url input
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('.url-input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 100);
+}
+
+function checkAlerts() {
+  const alerts = [];
+  items.forEach((item, i) => {
+    const p = prices[i];
+    const myOrder = parseFloat(item.myOrder) || null;
+    if (p && myOrder && p.median && p.median > myOrder) {
+      alerts.push(`<b>${item.name}</b>: precio mediano ${f2(p.median)} supera tu orden ${f2(myOrder)}`);
+    }
+  });
+  const banner = document.getElementById('alert-banner');
+  if (alerts.length) {
+    banner.style.display = 'block';
+    banner.innerHTML = '⚠ ' + alerts.join('<br>⚠ ');
+    if (Notification.permission === 'granted') {
+      new Notification('Steam Monitor', { body: alerts.map(a=>a.replace(/<[^>]+>/g,'')).join('\n') });
+    }
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function checkAll() {
+  document.getElementById('status-text').textContent = 'Revisando precios...';
+  document.getElementById('main-dot').className = 'dot';
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const name = item.marketHashName || getMarketName(item.url);
+    if (!name) continue;
+    const data = await fetchOrderBook(name);
+    if (data) prices[i] = data;
+    renderAll();
+  }
+
+  const now = new Date();
+  document.getElementById('status-text').textContent =
+    `Última revisión: ${now.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'})}`;
+
+  checkAlerts();
+
+  if (!isAuto) {
+    document.getElementById('main-dot').className = 'dot';
+    document.getElementById('pulse-dot').className = 'pulse off';
+  }
+}
+
+function toggleAuto() {
+  if (isAuto) {
+    clearInterval(autoInterval);
+    clearInterval(countdownInterval);
+    autoInterval = null;
+    countdownInterval = null;
+    isAuto = false;
+    nextCheckTime = null;
+    document.getElementById('auto-btn').textContent = 'Iniciar auto';
+    document.getElementById('pulse-dot').className = 'pulse off';
+    document.getElementById('status-text').textContent = 'Auto-revisión desactivada';
+    document.getElementById('countdown').textContent = '—';
+    document.getElementById('main-dot').className = 'dot';
+    Notification.requestPermission();
+  } else {
+    Notification.requestPermission();
+    isAuto = true;
+    document.getElementById('auto-btn').textContent = 'Detener auto';
+    document.getElementById('pulse-dot').className = 'pulse';
+    checkAll();
+    scheduleNext();
+    autoInterval = setInterval(() => {
+      checkAll();
+      scheduleNext();
+    }, 15 * 60 * 1000);
+  }
+}
+
+function scheduleNext() {
+  nextCheckTime = Date.now() + 15 * 60 * 1000;
+  clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    if (!nextCheckTime) return;
+    const diff = Math.max(0, nextCheckTime - Date.now());
+    const m = Math.floor(diff / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('countdown').textContent =
+      `${m}:${s.toString().padStart(2,'0')}`;
+    if (diff === 0) document.getElementById('countdown').textContent = 'Revisando...';
+  }, 1000);
+}
+
+// Init
+renderAll();
+</script>
+</body>
+</html>
